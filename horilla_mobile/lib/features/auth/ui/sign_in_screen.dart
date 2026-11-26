@@ -19,6 +19,13 @@ import '../../../shared/widgets/pressable.dart';
 /// Server the host field starts on. See the controller below for why.
 const String kDefaultHost = 'https://work.eqourse.com';
 
+/// The OAuth audience for the HRMS API. This is the existing Web OAuth client
+/// ID, supplied at build time so it is not hard-coded into the repository.
+/// The Android OAuth client ID and release SHA-1 are registered in Google
+/// Cloud; they are not the value used as the server audience.
+const String kGoogleServerClientId =
+    String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key, this.onSignedIn});
 
@@ -124,7 +131,16 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Future<void> _signInWithGoogle() async {
     setState(() { _busy = true; _formError = null; _hostError = null; });
     try {
-      final account = await GoogleSignIn(scopes: const ['email']).signIn();
+      if (kGoogleServerClientId.isEmpty) {
+        throw const ApiUnknown(
+          'Google sign-in is not configured for this build. '
+          'Use the eQOURSE Web OAuth client ID when building the app.',
+        );
+      }
+      final account = await GoogleSignIn(
+        scopes: const ['email'],
+        serverClientId: kGoogleServerClientId,
+      ).signIn();
       if (account == null) return;
       final token = (await account.authentication).idToken;
       if (token == null || token.isEmpty) throw const ApiUnknown('Google did not return a verifiable sign-in token.');

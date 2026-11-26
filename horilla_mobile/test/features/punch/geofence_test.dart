@@ -172,16 +172,16 @@ void main() {
   });
 
   group('uncertainty-aware office boundary', () {
-    test('40 m plus 9 m accuracy is accepted', () {
-      expect(isWithinAccuracyBoundary(distanceFromOffice: 40, accuracy: 9), isTrue);
+    test('75 m plus 25 m accuracy is accepted at exactly 100 m', () {
+      expect(isWithinAccuracyBoundary(distanceFromOffice: 75, accuracy: 25), isTrue);
     });
 
-    test('40 m plus 10 m accuracy is accepted at exactly 50 m', () {
-      expect(isWithinAccuracyBoundary(distanceFromOffice: 40, accuracy: 10), isTrue);
+    test('76 m plus 25 m accuracy is rejected just over 100 m', () {
+      expect(isWithinAccuracyBoundary(distanceFromOffice: 76, accuracy: 25), isFalse);
     });
 
-    test('49 m plus 25 m accuracy is rejected', () {
-      expect(isWithinAccuracyBoundary(distanceFromOffice: 49, accuracy: 25), isFalse);
+    test('10 m plus 26 m accuracy is rejected above the GPS limit', () {
+      expect(isWithinAccuracyBoundary(distanceFromOffice: 10, accuracy: 26), isFalse);
     });
   });
 }

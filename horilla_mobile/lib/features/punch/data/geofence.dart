@@ -16,7 +16,9 @@ import 'dart:math' as math;
 /// closely enough at fence distances (tens to hundreds of metres).
 const double _earthRadiusMetres = 6371008.8;
 
-const double kOfficeRadiusMetres = 50;
+/// The pilot onsite fence. The server must use the same value before this
+/// build is used for official attendance.
+const double kOfficeRadiusMetres = 100;
 const double kMaximumGpsAccuracyMetres = 25;
 
 /// The uncertainty-aware onsite rule used by the server.

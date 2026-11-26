@@ -7,6 +7,21 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+fun localReleaseSetting(name: String): String? =
+    providers.gradleProperty(name).orNull?.takeIf { it.isNotBlank() }
+        ?: System.getenv(name)?.takeIf { it.isNotBlank() }
+
+val releaseStoreFile = localReleaseSetting("EQOURSE_RELEASE_STORE_FILE")
+val releaseStorePassword = localReleaseSetting("EQOURSE_RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = localReleaseSetting("EQOURSE_RELEASE_KEY_ALIAS")
+val releaseKeyPassword = localReleaseSetting("EQOURSE_RELEASE_KEY_PASSWORD")
+val hasLocalReleaseSigning = listOf(
+    releaseStoreFile,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).all { it != null }
+
 android {
     namespace = "com.eqourse.work"
     compileSdk = 36
@@ -37,9 +52,23 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasLocalReleaseSigning) {
+            create("eqourseRelease") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         getByName("release") {
             isShrinkResources = true // This requires isMinifyEnabled = true
+            if (hasLocalReleaseSigning) {
+                signingConfig = signingConfigs.getByName("eqourseRelease")
+            }
         }
         getByName("debug") {
             // Debug builds install alongside the released app instead of

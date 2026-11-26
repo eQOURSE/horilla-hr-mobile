@@ -40,7 +40,7 @@ const _office = GeofenceState(
   enabled: true,
   latitude: 25.14402,
   longitude: 75.84506,
-  radiusInMeters: 50,
+  radiusInMeters: 100,
 );
 
 Future<PunchPreparation> prepare({
@@ -223,6 +223,32 @@ void main() {
     );
   });
 
+  test('a wrong face is rejected by the server for a check-out', () async {
+    final adapter = _ScriptedAdapter(
+      clockedInAfter: true,
+      faceMismatch: true,
+    );
+    final container = _submitContainer(adapter);
+    addTearDown(container.dispose);
+
+    expect(
+      () => container.read(punchControllerProvider).submit(
+        PunchPreparation(
+          isClockingIn: false,
+          faceImage: Uint8List.fromList([1, 2, 3]),
+        ),
+      ),
+      throwsA(
+        isA<ApiUnknown>().having(
+          (e) => e.message,
+          'message',
+          'Face does not match the signed-in employee.',
+        ),
+      ),
+    );
+    expect(adapter.clockOuts, 0);
+  });
+
   test('already clocked-out while still in is still an error', () async {
     final adapter = _ScriptedAdapter(clockedInAfter: true);
     final container = _submitContainer(adapter);
@@ -269,10 +295,15 @@ ProviderContainer _submitContainer(_ScriptedAdapter adapter) {
 /// Clock-out answers the lie the web view produces; home says whether the
 /// punch is actually still open.
 class _ScriptedAdapter implements HttpClientAdapter {
-  _ScriptedAdapter({required this.clockedInAfter, this.clockInError});
+  _ScriptedAdapter({
+    required this.clockedInAfter,
+    this.clockInError,
+    this.faceMismatch = false,
+  });
 
   final bool clockedInAfter;
   final String? clockInError;
+  final bool faceMismatch;
   int clockOuts = 0;
 
   @override
@@ -287,6 +318,15 @@ class _ScriptedAdapter implements HttpClientAdapter {
     final headers = {
       Headers.contentTypeHeader: [Headers.jsonContentType],
     };
+    if (faceMismatch &&
+        (options.uri.path.contains('clock-in') ||
+            options.uri.path.contains('clock-out'))) {
+      return ResponseBody.fromString(
+        '{"error":"Face does not match the signed-in employee."}',
+        400,
+        headers: headers,
+      );
+    }
     if (clockInError != null && options.uri.path.contains('clock-in')) {
       return ResponseBody.fromString(
         '{"error":${jsonEncode(clockInError)}}',

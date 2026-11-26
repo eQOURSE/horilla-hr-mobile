@@ -48,15 +48,17 @@ class PunchPreparation {
   bool get canSubmit {
     if (locationFailure != null || coordinates == null) return false;
     final accuracy = coordinates!.accuracy;
-    return accuracy != null && accuracy >= 0 && accuracy <= 25;
+    return accuracy != null &&
+        accuracy >= 0 &&
+        accuracy <= kMaximumGpsAccuracyMetres;
   }
 
   String? get blockedReason {
     if (locationFailure != null) return locationFailure!.message;
     if (coordinates == null) return 'Getting your location…';
     final accuracy = coordinates!.accuracy;
-    if (accuracy == null || accuracy > 25) {
-      return 'GPS accuracy is ${accuracy == null ? 'unavailable' : '±${accuracy.toStringAsFixed(1)} m'}. It must be ±25 m or better. Retry your location.';
+    if (accuracy == null || accuracy > kMaximumGpsAccuracyMetres) {
+      return 'GPS accuracy is ${accuracy == null ? 'unavailable' : '±${accuracy.toStringAsFixed(1)} m'}. It must be ±${kMaximumGpsAccuracyMetres.round()} m or better. Retry your location.';
     }
     if (fence != null && !fence!.isInside) {
       return 'Estimated distance is ${formatDistance(fence!.distanceFromCentre)} with ±${accuracy.toStringAsFixed(1)} m accuracy. Approved WFH/remote staff may continue; onsite punches must be within the approved boundary.';
